@@ -138,8 +138,27 @@ class User {
         var uid = m.mentions[0] == null ? m.author.id.id : m.mentions[0].id.id;
         var u = Rgd.db.request('SELECT * FROM users WHERE userId = "$uid"').results().first();
         var member = m.getGuild().members[uid];
-       
-        var inVoice = DateTools.parse(u.voice);
+
+        var location = Rgd.db.request('SELECT location FROM spots WHERE userId = "$uid"').results();
+        
+        var t:Int = u.voice;
+        trace(t);
+        var v = {
+            days: 0,
+            hours: 0,
+            minutes: 0,
+            seconds: 0,
+        };
+        v.days = Std.int(t / (60*60*24)); 
+        t -= v.days * 24 * 60 * 60;
+        v.hours = Std.int(t / (60*60));
+        t -= v.hours * 60 * 60;
+        v.minutes = Std.int(t / 60);
+        t -= v.minutes * 60;
+        v.seconds = t;
+
+        var inVoice = v;
+        
         var embed:Embed = {
             footer: {text: 'Запрос от ${m.getMember().displayName}'},
             color: 0xFF9900,
@@ -158,7 +177,16 @@ class User {
         }
         if (u.part != '') {embed.fields.push({name: 'В браке с', value: '<@${u.part}>', _inline: true});}
         if (u.birth != '') {embed.fields.push({name: 'День рождения', value: '${u.birth}', _inline: true});}
+        if (location.length > 0) {
+            embed.fields.push({
+                name: 'Распологается в',
+                value: location.pop().location,
+                _inline: true,
+            });
+        }
         if (u.about != '') {embed.fields.push({name: 'Об юзере', value: '${u.about}', _inline: false});}
+
+        
         m.reply({embed: embed});
 
     }
@@ -219,8 +247,8 @@ class User {
                     return;
                 }
                 
-
-                Rgd.db.request('INSERT INTO rep(userId, fromId, reason, _when) VALUES("${u.id.id}", "${m.author.id.id}", "${dm.content}", "${Date.now().toString()}")');
+                dm.content = dm.content.removeQuotes();
+                Rgd.db.request('INSERT INTO rep(userId, fromId, _when, reason) VALUES("${u.id.id}", "${m.author.id.id}", "${Date.now().toString()}", "${dm.content}")');
                 Rgd.db.request('UPDATE users SET rep = rep + 1 WHERE userId = "${u.id.id}"');
                 var rep = Rgd.db.request('SELECT rep FROM users WHERE userId = "${u.id.id}"').getIntResult(0);
                 m.reply({embed: {description: 'Теперь увожение ${u.tag} повысилось до `$rep`'}});
@@ -354,7 +382,23 @@ class User {
         var c = '';
         var p = 1;
         for (pos in top) {
-            var v = DateTools.parse(pos.voice);
+
+            var t:Int = pos.voice;
+            trace(t);
+            var v = {
+                days: 0,
+                hours: 0,
+                minutes: 0,
+                seconds: 0,
+            };
+            v.days = Std.int(t / (60*60*24)); 
+            t -= v.days * 24 * 60 * 60;
+            v.hours = Std.int(t / (60*60));
+            t -= v.hours * 60 * 60;
+            v.minutes = Std.int(t / 60);
+            t -= v.minutes * 60;
+            v.seconds = t;
+
             c += '${p++}. <@${pos.userId}>: `${v.hours+(24*v.days)} ч ${v.minutes} мин ${v.seconds} сек` \n';
         }
         var embed:Embed = {
@@ -480,6 +524,7 @@ class User {
             m.reply({content: 'Слишком жирно'});
             return;
         }
+        desc = desc.removeQuotes();
         Rgd.db.request('UPDATE users SET about = "$desc" WHERE userId = "${m.author.id.id}"');
         m.reply({content: '${m.author.tag} описание установлено'});
     }
@@ -538,20 +583,32 @@ class User {
             }
         });
         var time = Date.now().toString().split(" ")[0].split("-");
-        var cmd = 'SELECT * FROM users WHERE birth LIKE "${StringTools.replace(time[2], "0", "")}%" and birth LIKE "%.${StringTools.replace(time[1], "0", "")}.%" and here = 1';
+
+        var reqvDate = (time[2] >= '10' ? time[2] : StringTools.replace(time[2], "0", "")) + '.';
+        reqvDate += (time[1] >= '10' ? time[1] : StringTools.replace(time[1], "0", "")) + '.';
+
+
+        var cmd = 'SELECT * FROM users WHERE birth like "$reqvDate%" and here = 1';
+        trace(cmd);
         var users = Rgd.db.request(cmd).results();
         if (users.length == 0) {
             return;
         }
+
         var nowYear = Std.parseInt(Date.now().toString().split('-')[0]);
         var e:Embed = {};
-        e.description = "СЕГОДНЯШНИЕ ИМЕНИННИКИ";
         var fld:EmbedField = {value: '', name: 'и вот их список'};
         for (user in users) {
-            var oldYear = Std.parseInt(user.birth.split('.')[2]);
+            var oldYear = user.birth.split('.');
             Rgd.bot.endpoints.giveMemberRole(Rgd.rgdId, user.userId, birthTole);
-            fld.value += '<@${user.userId}> сегодня празднует свое ${nowYear-oldYear} летие\n';
+            fld.value += '<@${user.userId}> сегодня празднует свое ${nowYear-Std.parseInt(oldYear[2])} летие\n';
         }
+        
+        if (fld.value.length == 0) {
+            return;
+        }
+
+        e.description = "СЕГОДНЯШНИЕ ИМЕНИННИКИ";
         e.fields = [fld];
         e.footer = {text: "поздравьте их"};
         Rgd.bot.sendMessage(chanId, {embed: e});
@@ -646,6 +703,22 @@ class User {
 
     }
     
+
+
+    @command(['ava', 'ава'], 'получить аватар юзера', '>пинг')
+    public static function getAvatar(m:Message, w:Array<String>) {
+        if (m.mentions.length == 0) {
+            m.answer('нет пинга');
+            return;
+        }
+        m.reply({
+            embed: {
+                image: {
+                    url: m.mentions[0].avatarUrl+'?size=512'
+                }
+            }
+        });
+    }
 
     @down
     public static function down() {

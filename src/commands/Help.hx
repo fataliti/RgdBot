@@ -20,11 +20,6 @@ class Help {
             value: "Haxe+Haxicord -> NekoVM",
             _inline: false
         }
-        var f3:EmbedField = {
-            name: "Дайте деняк на джем",
-            value: "QIWI +79057444964",
-            _inline: false
-        }
         var f4:EmbedField = {
             name: "Дайте деняк автору бота",
             value: "https://qiwi.com/n/REIFSHNEIDER\nhttps://money.yandex.ru/to/4100111915700580",
@@ -32,7 +27,7 @@ class Help {
         }
         var embed:Embed = {
             author: {name: "RGDbot",icon_url: Rgd.bot.user.avatarUrl, },
-            fields: [f1, f2, f3, f4],
+            fields: [f1, f2, f4],
             color: 0xFF9900,
             title: "Сурсы",
             url: "https://github.com/fataliti/RGDbot",
@@ -42,7 +37,7 @@ class Help {
     }
 
     @inbot
-    @command(["info", "help", "?", "помощь"], "Показать модули либо информацию о конкретном модуле/команде"," ?модуль|команда")
+    @command(["info", "help", "помощь"], "Показать модули либо информацию о конкретном модуле/команде"," ?модуль|команда")
     public static function help(m:Message, words:Array<String>) {
         var shift = words.shift();
         if (shift != null) {
@@ -61,11 +56,11 @@ class Help {
                 var embed:Embed = {}
                 embed.color = 0xFF9900;
                 embed.author = { name: "RGDbot", icon_url: Rgd.bot.user.avatarUrl,}
-                embed.fields = [{name: refl.command[0].join(", "), value: '${Std.string(refl.command[1])}',}];
-                embed.footer = {text: '${Rgd.prefix}help|info ?команда/модуль'}
+                embed.fields = [{name: refl.command[0].join(" "), value: '${Std.string(refl.command[1])}',}];
+                embed.footer = {text: '${Rgd.prefix[0]}help ?команда/модуль'}
 
                 if (refl.command[2] != null) {
-                   embed.fields.push({name:"Использование", value: '${Rgd.prefix}${refl.command[0].join("|")} ${Std.string(refl.command[2])}'});
+                   embed.fields.push({name:"Использование", value: '${Rgd.prefix[0]}${refl.command[0].join(" ")} ${Std.string(refl.command[2])}'});
                 }
 
                 m.reply({embed: embed});
@@ -87,7 +82,7 @@ class Help {
                 embed.color = 0xFF9900;
                 embed.author = { name: refl[0], icon_url: Rgd.bot.user.avatarUrl,}
                 embed.description = refl[1];
-                embed.footer = {text: '${Rgd.prefix}help|info ?команда/модуль'}
+                embed.footer = {text: '${Rgd.prefix[0]}help ?команда/модуль'}
 
                 var commands = Meta.getStatics(mod);
                 var comlist  = "";
@@ -98,7 +93,7 @@ class Help {
                     if (Reflect.hasField(filds, "admin")) 
                         if (!m.hasPermission(DPERMS.ADMINISTRATOR)) 
                             continue;
-                    comlist += '`${filds.command[0].join(',')}` ${Std.string(filds.command[1])}\n';
+                    comlist += '`${filds.command[0].join(' ')}` ${Std.string(filds.command[1])}\n';
                 }
 
                 embed.fields = [{
@@ -115,7 +110,7 @@ class Help {
             var embed:Embed = {}
             embed.color = 0xFF9900;
             embed.author = { name: "RGDbot", icon_url: Rgd.bot.user.avatarUrl,}
-            embed.footer = {text: '${Rgd.prefix}help|info ?команда/модуль'}
+            embed.footer = {text: '${Rgd.prefix[0]}help ?команда/модуль'}
             var embFild:EmbedField = {name: 'Модули', value: ''};
             
             for (_class in classList) {
@@ -165,7 +160,7 @@ class Help {
         k = 1;
         var vv = '';
         for (v in voice) {
-            var t = DateTools.parse(v.voice);
+            var t = DateTools.parse(v.voice*1000);
             vv += '${k++}. <@${v.userId}>: `${t.hours} ч ${t.minutes} мин` \n';
         }
 
@@ -203,7 +198,7 @@ class Help {
         k = 1;
         var vv = '';
         for (v in voice) {
-            var t = DateTools.parse(v.voice);
+            var t = DateTools.parse(v.voice * 1000);
             vv += '${k++}. <@${v.userId}>: `${t.hours+(t.days*24)} ч ${t.minutes} мин` \n';
         }
 

@@ -152,6 +152,38 @@ class Control {
         });
     }
 
+    @command(["rename", "rn"], "переименовать кого-то", ">пинг >имя")
+    public static function renameUser(m:Message, w:Array<String>) {
+        var usr = m.mentions[0];
+        if (usr == null) {
+            m.answer("нет пинга");
+            return;
+        }
+        if (w[1] == null) {
+            m.answer("нет переименования");
+            return;
+        }
+        w.shift();
+        Rgd.bot.endpoints.editGuildMember(Rgd.rgdId, usr.id.id, {nick: w.join(' ')});
+    }
+    
+    @command(["renamev", "rnv"], "переименовать войс канал", ">id канала >имя")
+    public static function renameVoice(m:Message, w:Array<String>) {
+        if (w[1] == null) {
+            m.answer("нет переименования");
+            return;
+        }
+        var ch = w.shift();
+        if (ch == null) {
+            m.answer('нет айди канала');
+            return;
+        }
+        if (!Rgd.bot.getGuildUnsafe(Rgd.rgdId).voiceChannels.exists(ch)) {
+            m.answer('или такого канала нет или это не войс канал');
+            return;
+        }
+        Rgd.bot.getGuildUnsafe(Rgd.rgdId).voiceChannels[ch].editChannel({name: w.join(' ')});
+    }
 
     @down
     public static function down() {

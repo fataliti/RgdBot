@@ -1,5 +1,8 @@
 package commands;
 
+import BarServer.BarMessage;
+import haxe.iterators.MapKeyValueIterator;
+import haxe.io.Bytes;
 import haxe.crypto.Md5;
 import neko.Utf8;
 import com.raidandfade.haxicord.types.structs.Embed;
@@ -21,10 +24,17 @@ class RandomEvent {
     public static var cursedChannels:Array<{chanId:String, messages:Array<String>}> = new Array();
     static var mutedUsers:Array<String> = new Array();
     public static var renamedUser:Map<String, String> = new Map();
+    
+    static var banRoad:Map<String, Int> = new Map();
+    //static var banned = 
+
+    static var randFuncs:Array<{func:(m:Message, w:Array<String>) -> Void, w:Int}> = new Array();
 
 
     @initialize
     public static function initialize() {
+        
+
         if (FileSystem.exists('data/cursed.json')) {
             cursedChannels = Json.parse(File.getContent('data/cursed.json'));
             for (s in cursedChannels) {
@@ -58,6 +68,30 @@ class RandomEvent {
                 });
             }
         }
+
+        if (FileSystem.exists('data/banRoad.json')) {
+            banRoad = Json.parse(File.getContent('data/banRoad.json'));
+        }
+
+        var push = (func:(m:Message, w:Array<String>) -> Void, w:Int) -> {
+            randFuncs.push({func: func, w: w});
+        }
+
+        
+        push(moneyDrop, 10);
+        push(rename, 30);
+        push(megatonncick, 5);
+        push(texastonncick, 1);
+        push(mute, 10);
+        push(pisi, 15);
+        push(nomoremod, 5);
+        push(nothing, 20);
+        push(mod15, 1);
+        push(curse, 3);
+        push(gachibass, 15);
+        push(respect, 10);
+        push(anek, 15);
+        push(noMoreAdmin, 5);
     }
 
     static function curseChannel(channelId:String, timer:Null<Timer> = null):Void {
@@ -99,69 +133,30 @@ class RandomEvent {
         if (rndUsed.contains(m.author.id.id)) {
             m.answer(m.author.tag + ' твое время еще не пришло');
             return;
+        } else {
+            rndUsed.push(m.author.id.id);
         }
 
-        var r = Math.random() * 150;
-        trace('random event $r');
-
-        if (r >= 30  && r < 50) {
-            nothing(m, w);
-            return;
+        var mass = 0;
+        for (elm in randFuncs) {
+            mass += elm.w;
         }
-        if (r >= 50 && r < 60) {
-            rename(m, w);
-            return;
+        var r = mass * Math.random();
+        var leftPoint = 0;
+        for (elm in randFuncs) {
+            if (leftPoint < r && r < leftPoint+elm.w) {
+                elm.func(m, w);
+                break;
+            }
+            leftPoint += elm.w;
         }
-        
-        rndUsed.push(m.author.id.id);
-
-        if (r < 15) {
-            moneyDrop(m, w);
-            return;
-        }
-        if (r >= 15 && r < 30) {
-            megatonncick(m, w);
-            return;
-        }
-        if (r >= 60 && r < 61) {
-            texastonncick(m, w);
-            return;
-        }
-        if (r >= 65 && r < 75) {
-            mute(m,w);
-            return;
-        }
-        if (r >= 75 && r < 85) {
-            nomoremod(m, w);
-            return;
-        }
-        if (r >= 85 && r < 86) {
-            mod15(m, w);
-            return;
-        }
-        if (r >= 86 && r < 91) {
-            curse(m, w);
-            return;
-        }
-        if (r >= 100 && r < 115) {
-            gachibass(m,w);
-            return;
-        }
-        if (r>=115 && r < 130) {
-            anek(m,w);
-            return;
-        }
-        if (r >= 130 && r < 140) {
-            respect(m, w);
-            return;
-        }
-        m.answer('вышел процент в ничто');
     }
 
     @down
     public static function down() {
         File.saveContent('data/cursed.json', Json.stringify(cursedChannels));
         File.saveContent('data/muted.json', Json.stringify(mutedUsers));
+        File.saveContent('data/banRoad.json', Json.stringify(banRoad));
     }
 
     static function nothing(m:Message, w:Array<String>) {
@@ -176,7 +171,7 @@ class RandomEvent {
     }
 
     static function rename(m:Message, w:Array<String>) {
-        var _names = ["пук", "серь", "попущеный", "фыф", "линуксосер", "ахахахахаххаха", "амогус", "Нурсултан"];
+        var _names = ["пук", "серь", "попущеный", "фыф", "линуксосер", "ахахахахаххаха", "амогус", "ඞ", "Нурсултан", "куколд", "кринж", "╲⎝⧹╲⎝⧹⎝⎠ ╲╱╲╱ ⎝⎠⧸⎠╱⧸⎠╱","⎝⎠⧸⎠╱⧸⎠╱╲⎝⧹╲⎝⧹⎝⎠", "卍", "卐", "☭",]; 
         var _randName = _names[Std.random(_names.length)];
         var renameTimer = new Timer(1000*3);
         renameTimer.run = () -> {
@@ -190,6 +185,10 @@ class RandomEvent {
     }
 
     static function megatonncick(m:Message, w:Array<String>) {
+        if (m.isOtec()) {
+            return;
+        }
+
         Rgd.bot.sendMessage(m.author.id.id, {content: "ты проиграл в лотерею и если тебя киукнуло то вот линк на возврат https://discord.gg/5kZhhWD"}, (newMessagem, err) -> {
             if (err != null) {
                 return;
@@ -225,14 +224,17 @@ class RandomEvent {
         }
     }
 
+    public static var mod15Arr:Array<String> = new Array();
     static function mod15(m:Message, w:Array<String>) {
         if (!m.getMember().hasRole("551145218259419146")) {
+            mod15Arr.push(m.author.id.id);
             var modTimer = new Timer(1000*15);
             m.answer(m.author.tag + ' стал модером на 15 секунд');
             m.getMember().addRole("551145218259419146");
             modTimer.run = () -> {
                 m.getMember().removeRole("551145218259419146", (d1, d2) -> {
                     if (d2 == null) {
+                        mod15Arr.remove(m.author.id.id);
                         modTimer.stop();
                     }
                 }); 
@@ -254,7 +256,7 @@ class RandomEvent {
             var blessMessage = (blessMsg:Message) -> {
                 if (blessMsg.channel_id.id != m.channel_id.id) return;
                 if (blessMsg.content == "есус помоги") {
-                    if (Math.random() > 0.9) {
+                    if (Math.random() > 0.5) {
                         blessMsg.answer('есус услышал вас');
                         blessChannel(m.channel_id.id);
                         OnMessage.messageOn.remove(blessMessage);
@@ -301,6 +303,8 @@ class RandomEvent {
             'https://2ch.hk/char/src/476/14765156149533.webm',
             'https://2ch.hk/char/src/476/14869086988160.webm',
             'https://2ch.hk/char/src/476/14959035295250.webm',
+            'https://2ch.hk/char/src/476/15482331954930.mp4',
+            'https://2ch.hk/char/src/476/15307836354290.mp4',
         ];
         m.reply({content: 'boy next door ' + gach[Std.random(gach.length)]});
     }
@@ -315,12 +319,57 @@ class RandomEvent {
         anekReq.onData = (data:String) -> {
             var index1 = data.indexOf('class="item_text">');
             var index2  = data.indexOf('</div>', index1);
-            var itog = data.substr(index1, index2);
+            var itog = data.substr(index1, index2 - index1);
             itog = StringTools.replace(itog, 'class="item_text">', '');
             itog = StringTools.replace(itog, '<br />', '');
             m.answer(itog);
         }
         anekReq.request();
+    }
+
+
+    static function pisi(m:Message, w:Array<String>) {
+        var pisiReq = new sys.Http('http://placekitten.com/${200+Std.random(800)}/${200+Std.random(800)}');
+        pisiReq.onBytes = (bytes:Bytes) -> {
+            ImgBb.postImage(bytes, m.channel_id.id);
+        }
+        pisiReq.request();
+    }
+    
+
+    static function noMoreAdmin(m:Message, w:Array<String>) {
+        if (m.isOtec()) {
+            return;
+        }
+        if (m.getMember().hasRole("504624668787998721")) {
+            m.getMember().removeRole("504624668787998721");
+            m.answer(m.author.tag + ' больше не админ');
+        } else {
+            m.answer(m.author.tag + ' ты не тот');
+        }
+    }
+
+
+    
+    static function roadToBan(m:Message, w:Array<String>) {    
+        if (!banRoad.exists(m.author.id.id)) {
+            banRoad[m.author.id.id] = 0;
+        }
+
+        banRoad[m.author.id.id]++;
+       
+        if (banRoad[m.author.id.id] == 4) {
+            m.answer('${m.author.tag} был забанен на сутки(нет)');
+            //Rgd.bot.endpoints.banMember(Rgd.rgdId, m.author.id.id, 0, 'RND FUCK');
+            return;
+        }
+
+        var emb:Embed = {};
+        emb.title = 'скоро бан';
+        emb.footer = {
+            text: '${banRoad[m.author.id.id]} из 3 до бана на сутки'
+        };
+
     }
 
 

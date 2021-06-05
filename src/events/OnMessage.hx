@@ -62,8 +62,11 @@ class OnMessage {
             Rgd.db.request('UPDATE day SET text = text + ${words.length} WHERE userId = "${m.author.id.id}"');
             Rgd.db.request('UPDATE week SET text = text + ${words.length} WHERE userId = "${m.author.id.id}"');
 
-            if (m.content.length > 0) {
-                Rgd.rgdBar.sendMessage(m);
+
+            if (Rgd.rgdBar != null) {
+                if (m.content.length > 0) {
+                    Rgd.rgdBar.sendMessage(m);
+                }
             }
 
         }

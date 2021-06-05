@@ -5,11 +5,15 @@ import events.OnReactionRemove;
 import events.OnReactionAdd;
 import com.raidandfade.haxicord.types.Message;
 
+using Utils;
+
 @admin
 @desc("RoleMessage","Модуль управления сообщений с реакциями")
 class RoleMessage {
 
     static var roleMsg:Array<String> = [];
+    static var managerMsg:Array<String> = [];
+
 
     @initialize
     public static function initialize() { 
@@ -22,6 +26,13 @@ class RoleMessage {
                 "emoji" TEXT
             )'
         );
+
+        Rgd.db.request('
+            CREATE TABLE IF NOT EXISTS "reactm" (
+                "id" TEXT PRIMARY KEY
+            )'
+        );
+
         OnReactionAdd.reactOn.push((m, u, e) -> {
             if (u == null || u.bot) return; 
             var emote = e.id == null ? e.name : e.id;
@@ -43,6 +54,88 @@ class RoleMessage {
                 });
             }
         });
+
+
+
+        var roleManager = Rgd.db.request('SELECT id FROM reactm');
+        for (msg in roleManager) {
+            managerMsg.push(msg.id);
+        }
+        
+        OnReactionAdd.reactOn.push((m, u, e) -> {
+            if (u == null || u.bot) return; 
+            if (Rgd.db.request('SELECT id FROM reactm WHERE id = "${m.id.id}"').results().length > 0 ) {
+                var rpos = m.content.indexOf(e.name);
+                if (rpos < 0) return;
+                var rids = m.mention_roles.map(e -> return e.id.id).filter(e -> return m.content.indexOf(e) > rpos);
+                var minDif = 99999999;
+                var rid:Null<String> = null;
+                for (s in rids) {
+                    if (m.content.indexOf(s) < minDif) {
+                        minDif = m.content.indexOf(s);
+                        rid = s;
+                    }
+                }
+                if (rid != null) {
+                    m.getGuild().getMember(u.id.id, member -> {
+                        member.addRole(rid);
+                    });
+                }
+            }
+        });
+
+        OnReactionRemove.reactOff.push((m, u, e) -> {
+            if (u == null || u.bot) return; 
+            if (Rgd.db.request('SELECT id FROM reactm WHERE id = "${m.id.id}"').results().length > 0 ) {
+                var rpos = m.content.indexOf(e.name);
+                if (rpos < 0) return;
+                var rids = m.mention_roles.map(e -> return e.id.id).filter(e -> return m.content.indexOf(e) > rpos);
+                var minDif = 99999999;
+                var rid:Null<String> = null;
+                for (s in rids) {
+                    if (m.content.indexOf(s) < minDif) {
+                        minDif = m.content.indexOf(s);
+                        rid = s;
+                    }
+                }
+                if (rid != null) {
+                    m.getGuild().getMember(u.id.id, member -> {
+                        member.removeRole(rid);
+                    });
+                }
+            }
+        });
+    }
+
+
+    @admin
+    @command(["makereact", "reactable"], "Сделать сообщение менеджером ролей по реакции, структура сообщения должна состоять из пар EMOJI ROLEPING", ">id сообщения")
+    public static function reactableMessage(m:Message, w:Array<String>) {
+        if (w[0] == null) {
+            m.answer('Не указан id сообщения');
+            return;
+        }
+        if (managerMsg.contains(w[0])) {
+            m.answer('сообщение уже менеджерируется');
+            return;
+        }
+        Rgd.db.request('INSERT INTO reactm(id) VALUES("${w[0]}")');
+        m.answer('соообщение стало менеджером ролей');
+    }
+
+    @admin
+    @command(["demakereact", "dereactable", "unreact", "unreactable"], "Команда для снятия менеджера ролей с сообщения", ">id сообщения")
+    public static function deReactableMessage(m:Message, w:Array<String>) {
+        if (w[0] == null) {
+            m.answer('Не указан id сообщения');
+            return;
+        }
+        if (!managerMsg.contains(w[0])) {
+            m.answer('сообщение не является менеджерируемым');
+            return;
+        }
+        Rgd.db.request('DELETE FROM reactm WHERE id = "${w[0]}"');
+        m.answer('снят менеджер ролей с сообщения');  
     }
 
     @admin

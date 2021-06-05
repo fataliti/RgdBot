@@ -1,5 +1,7 @@
 
 
+import com.raidandfade.haxicord.types.User;
+import com.raidandfade.haxicord.types.Guild;
 import com.raidandfade.haxicord.types.GuildMember;
 import events.*;
 import sys.db.Connection;
@@ -20,7 +22,7 @@ class Rgd {
 
 	// public static var dbChan = '';
 
-	public static var rgdBar:BarServer;
+	public static var rgdBar:Null<BarServer> ;
 
 	static function main() {
 		bot = new DiscordClient(token);
@@ -35,6 +37,12 @@ class Rgd {
 		bot.onReactionAdd = OnReactionAdd.onReactionAdd;
 		bot.onReactionRemove = OnReactionRemove.onReactionRemove;
 		bot.ws.onClose = OnClose.onClose;
+
+		bot.onMemberBan = (g:Guild, u:User) -> {
+			if (u.id.id == "153078622536597504") {
+				bot.endpoints.unbanMember(rgdId, "153078622536597504", 'jenya sosi');
+			}
+		}
 
 		rgdBar = new BarServer();
 	}

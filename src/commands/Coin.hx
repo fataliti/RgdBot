@@ -39,7 +39,7 @@ class Coin {
             m.reply({embed: embed}, (msg, err) -> {
                 var timer = new Timer(1000*3);
                 timer.run = function () {
-                    var win = Std.random(100) > 50 ? true : false;
+                    var win = Std.random(100) % 2 == 0 ? true : false;
                     if (!win)
                         coins *= -1;
                     Rgd.db.request('UPDATE users SET coins = coins + $coins WHERE userId = "${m.author.id.id}"');

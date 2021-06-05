@@ -25,6 +25,9 @@ class OnMemberUpdate {
         }
         
 
+        if (RandomEvent.mod15Arr.contains(m.user.id.id)) {
+            return;
+        }
         Rgd.db.request('DELETE FROM usersRole WHERE userId = "${m.user.id.id}"');
         for (role in m.roles) {
             Rgd.db.request('INSERT OR IGNORE INTO usersRole(userId, roleId) VALUES("${m.user.id.id}", "$role")');

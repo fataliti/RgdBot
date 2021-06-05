@@ -1,3 +1,4 @@
+import haxe.io.Bytes;
 import commands.SIgame;
 import haxe.Json;
 import sys.FileSystem;
@@ -8,6 +9,39 @@ import sys.Http;
 class ImgBb {
     static var key = InitData.imgDbKey;
 
+
+    public static function postImage(filebyte:Dynamic, chanId:String) {
+        var reqv = new Http("https://api.imgbb.com/1/upload");
+        reqv.setParameter('key', key);
+        reqv.setParameter('expiration', '15552000');
+
+        if (Std.isOfType(filebyte, Bytes)) {
+            var encod = Base64.encode(filebyte);
+            reqv.setParameter('image', encod);
+        } else {
+            var encod = Base64.encode(File.getBytes(filebyte));
+            reqv.setParameter('image', encod);
+        }
+
+        reqv.onStatus = s -> {
+            trace(s);
+        }
+
+        reqv.onData = d -> {
+            var responce:ImgBbResponce = Json.parse(d);
+            var link = responce.data.display_url;
+            Rgd.bot.sendMessage(chanId, {
+                embed: {
+                    image: {url: link},
+                    footer: {
+                        text: 'котик',
+                    }
+                }
+            });
+        }
+        
+        reqv.request(true);
+    }
 
     public static function postImageQuestion(qq:SiQuest) {
         var reqv = new Http("https://api.imgbb.com/1/upload");

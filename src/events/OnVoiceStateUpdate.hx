@@ -13,10 +13,9 @@ class OnVoiceStateUpdate {
 
         if (data.channel_id == null) {
             if (voiceMap.exists(data.user_id)) {
-                var time = Date.now().getTime() - voiceMap[data.user_id].getTime();
+                var time = (Date.now().getTime() - voiceMap[data.user_id].getTime())/1000;
+                
                 Rgd.db.request('UPDATE users SET voice = voice + $time WHERE userId = "${data.user_id}"');
-                
-                
                 Rgd.db.request('UPDATE day SET voice = voice + $time WHERE userId = "${data.user_id}"');
                 Rgd.db.request('UPDATE week SET voice = voice + $time WHERE userId = "${data.user_id}"');
                 
@@ -31,7 +30,7 @@ class OnVoiceStateUpdate {
 
     public static function saveTime() {
         for (key => value in voiceMap) {
-            var time = Date.now().getTime() - value.getTime();
+            var time = (Date.now().getTime() - value.getTime()) / 1000;
             Rgd.db.request('UPDATE users SET voice = voice + $time WHERE userId = "$key"');
             Rgd.db.request('UPDATE day SET voice = voice + $time WHERE userId = "${key}"');
             Rgd.db.request('UPDATE week SET voice = voice + $time WHERE userId = "${key}"');
