@@ -1,5 +1,6 @@
 package commands;
 
+import haxe.Timer;
 import com.raidandfade.haxicord.types.structs.Emoji;
 import events.OnReactionRemove;
 import events.OnReactionAdd;
@@ -12,8 +13,7 @@ using Utils;
 class RoleMessage {
 
     static var roleMsg:Array<String> = [];
-    static var managerMsg:Array<String> = [];
-
+    public static var managerInstance:RoleManager;
 
     @initialize
     public static function initialize() { 
@@ -29,7 +29,8 @@ class RoleMessage {
 
         Rgd.db.request('
             CREATE TABLE IF NOT EXISTS "reactm" (
-                "id" TEXT PRIMARY KEY
+                "id" TEXT PRIMARY KEY,
+                "chanId" TEXT
             )'
         );
 
@@ -56,30 +57,34 @@ class RoleMessage {
         });
 
 
+        managerInstance = new RoleManager();
+        var managerq = Rgd.db.request('SELECT * FROM reactm').results();
 
-        var roleManager = Rgd.db.request('SELECT id FROM reactm');
-        for (msg in roleManager) {
-            managerMsg.push(msg.id);
+        var managerTimer = new Timer(1000);
+        managerTimer.run = ()->{
+            if (managerq.length == 0) {
+                managerTimer.stop();
+                return;
+            }
+            var p = managerq.pop();
+            Rgd.bot.endpoints.getMessage(p.chanId, p.id, (cbmsg, cberror) -> {
+                managerInstance.messages.set(cbmsg.id.id, cbmsg);
+            });
         }
-        
+
         OnReactionAdd.reactOn.push((m, u, e) -> {
             if (u == null || u.bot) return; 
             if (Rgd.db.request('SELECT id FROM reactm WHERE id = "${m.id.id}"').results().length > 0 ) {
-                var rpos = m.content.indexOf(e.name);
-                if (rpos < 0) return;
-                var rids = m.mention_roles.map(e -> return e.id.id).filter(e -> return m.content.indexOf(e) > rpos);
-                var minDif = 99999999;
-                var rid:Null<String> = null;
-                for (s in rids) {
-                    if (m.content.indexOf(s) < minDif) {
-                        minDif = m.content.indexOf(s);
-                        rid = s;
+                m = managerInstance.messages.get(m.id.id);
+                var f = m.reactions.filter(elm -> return elm.emoji.name == e.name)[0];
+                if (f != null) {
+                    var index = m.reactions.indexOf(f);
+                    var role = m.mention_roles[index-1];
+                    if (role != null) {
+                        m.getGuild().getMember(u.id.id, member -> {
+                            member.addRole(role.id.id);
+                        });
                     }
-                }
-                if (rid != null) {
-                    m.getGuild().getMember(u.id.id, member -> {
-                        member.addRole(rid);
-                    });
                 }
             }
         });
@@ -87,21 +92,16 @@ class RoleMessage {
         OnReactionRemove.reactOff.push((m, u, e) -> {
             if (u == null || u.bot) return; 
             if (Rgd.db.request('SELECT id FROM reactm WHERE id = "${m.id.id}"').results().length > 0 ) {
-                var rpos = m.content.indexOf(e.name);
-                if (rpos < 0) return;
-                var rids = m.mention_roles.map(e -> return e.id.id).filter(e -> return m.content.indexOf(e) > rpos);
-                var minDif = 99999999;
-                var rid:Null<String> = null;
-                for (s in rids) {
-                    if (m.content.indexOf(s) < minDif) {
-                        minDif = m.content.indexOf(s);
-                        rid = s;
+                m = managerInstance.messages.get(m.id.id);
+                var f = m.reactions.filter(elm -> return elm.emoji.name == e.name)[0];
+                if (f != null) {
+                    var index = m.reactions.indexOf(f);
+                    var role = m.mention_roles[index-1];
+                    if (role != null) {
+                        m.getGuild().getMember(u.id.id, member -> {
+                            member.removeRole(role.id.id);
+                        });
                     }
-                }
-                if (rid != null) {
-                    m.getGuild().getMember(u.id.id, member -> {
-                        member.removeRole(rid);
-                    });
                 }
             }
         });
@@ -115,12 +115,20 @@ class RoleMessage {
             m.answer('Не указан id сообщения');
             return;
         }
-        if (managerMsg.contains(w[0])) {
+        if (managerInstance.messages.exists(w[0])) {
             m.answer('сообщение уже менеджерируется');
             return;
         }
-        Rgd.db.request('INSERT INTO reactm(id) VALUES("${w[0]}")');
-        m.answer('соообщение стало менеджером ролей');
+        
+        Rgd.bot.endpoints.getMessage(m.channel_id.id, w[0], (cbmsg, cberror) -> {
+            if (cberror == null) {
+                managerInstance.messages.set(w[0], cbmsg); 
+                Rgd.db.request('INSERT INTO reactm(id, chanId) VALUES("${w[0]}", "${m.channel_id.id}")');
+                m.answer('соообщение стало менеджером ролей');
+            }
+        });
+
+        
     }
 
     @admin
@@ -130,11 +138,12 @@ class RoleMessage {
             m.answer('Не указан id сообщения');
             return;
         }
-        if (!managerMsg.contains(w[0])) {
+        if (managerInstance.messages.exists(w[0]) == false) {
             m.answer('сообщение не является менеджерируемым');
             return;
         }
         Rgd.db.request('DELETE FROM reactm WHERE id = "${w[0]}"');
+        managerInstance.messages.remove(w[0]);
         m.answer('снят менеджер ролей с сообщения');  
     }
 
@@ -251,5 +260,17 @@ class RoleMessage {
         });
     }
     
+
+}
+
+
+
+class RoleManager {
+
+    public var messages:Map<String, Message>;
+
+    public function new() {
+        messages = new Map();
+    }
 
 }

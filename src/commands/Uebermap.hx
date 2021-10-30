@@ -31,7 +31,6 @@ class Uebermap {
         reqv.setParameter('user[email]', uebermapData.email);
         reqv.setParameter('user[password]', uebermapData.password);
         reqv.onData = (d:String) -> {
-            trace(d);
             var authData:AuthStruct = Json.parse(d);
             if (authData.meta.code == 200) {
                 token = authData.data.auth_token;

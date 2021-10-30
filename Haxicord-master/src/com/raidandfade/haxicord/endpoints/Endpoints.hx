@@ -1,5 +1,7 @@
 package com.raidandfade.haxicord.endpoints;
 
+import com.raidandfade.haxicord.endpoints.Typedefs.MessageCreate;
+import com.raidandfade.haxicord.types.structs.MessageStruct;
 import haxe.Json;
 import haxe.Timer;
 import haxe.Utf8;
@@ -37,6 +39,10 @@ import com.raidandfade.haxicord.types.structs.Connection;
 import com.raidandfade.haxicord.types.structs.Webhook;
 import com.raidandfade.haxicord.types.structs.Emoji;
 
+import com.fataliti.types.SlashCommand;
+import com.fataliti.types.SlashResponse;
+
+
 #if Profiler
 @:build(Profiler.buildMarked())
 #end
@@ -62,6 +68,65 @@ class Endpoints{
     var limitedQueue:Map<String, Array<EndpointCall>> = new Map<String, Array<EndpointCall>>();
 
     //ACTUAL ENDPOINTS : 
+
+
+    //  SLASH COOMAND REGISTER
+
+    public function registerGuildCommand(command:SlashCommand, applicationId:String, guildId:String, cb:(SlashCommandRegister->ErrorReport->Void) = null) {
+        var endppoint = new EndpointPath("/applications/{0}/guilds/{1}/commands", [applicationId, guildId]);
+        callEndpoint("POST", endppoint, cb, command);
+    }
+
+
+    public function commandResponse(responce:SlashResponse, interractionId:String, interractionToken:String, cb:(Dynamic->ErrorReport->Void) = null) {
+        var endppoint = new EndpointPath("/interactions/{0}/{1}/callback", [interractionId, interractionToken]);
+        callEndpoint("POST",endppoint, cb, responce);
+    }
+
+    public function commandResponseDelete(applicationId:String, interractionToken:String) {
+        var cb =  (e, d) -> {
+            trace(e);
+            trace(d);
+        }
+        var endppoint = new EndpointPath("/webhooks/{0}/{1}/messages/@original", [applicationId, interractionToken]);
+        callEndpoint("DELETE",endppoint, cb);
+    }
+
+    public function commandResponseEdit(applicationId:String, interractionToken:String, msgId:String, edit:SlashResponseData, cb:(Message->ErrorReport->Void) = null) {
+        var endppoint = new EndpointPath("/webhooks/{0}/{1}/messages/{2}", [applicationId, interractionToken, msgId]);
+        callEndpoint("PATCH", endppoint, cb, edit);
+    }
+
+    public function commandResponseGet(applicationId:String, interractionToken:String, cb:(Message->ErrorReport->Void) = null) {
+        var endppoint = new EndpointPath("/webhooks/{0}/{1}/messages/@original", [applicationId, interractionToken]);
+        callEndpoint("GET",endppoint, cb);
+    }
+
+    public function guildCommandEditPermission(permissions:SlashCommandPermissions, applicationId:String, guildId:String, commandId:String, cb:(Dynamic->ErrorReport->Void) = null) {
+        var endppoint = new EndpointPath("/applications/{0}/guilds/{1}/commands/{2}/permissions", [applicationId, guildId, commandId]);
+        callEndpoint("PUT", endppoint, cb, permissions);
+    }
+
+    public function deleteGuildCommand(applicationId:String, guildId:String, commandId:String, cb:(Dynamic->ErrorReport->Void) = null) {
+        var endppoint = new EndpointPath("/applications/{0}/guilds/{1}/commands/{2}", [applicationId, guildId, commandId]);
+        callEndpoint("DELETE", endppoint, cb);
+    }
+
+    public function getGuildCommands(applicationId:String, guildId:String, cb:(Array<SlashCommandRegister>->ErrorReport->Void) = null) {
+        var endppoint = new EndpointPath("/applications/{0}/guilds/{1}/commands", [applicationId, guildId]);
+        callEndpoint("GET", endppoint, cb);
+    }
+
+
+    public function followupMessageCreate(message:MessageStruct, applicationId:String, tokenId:String) {
+        var cb =  (e, d) -> {
+            trace(e);
+            trace(d);
+        }
+
+        var endppoint = new EndpointPath("/webhooks/{0}/{1}", [applicationId, tokenId]);
+        callEndpoint("POST", endppoint, cb, message);
+    }
 
     //GATEWAY ENDPOINTS
 

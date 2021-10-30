@@ -87,11 +87,12 @@ class RandomEvent {
         push(nomoremod, 5);
         push(nothing, 20);
         push(mod15, 1);
-        push(curse, 3);
+        //push(curse, 3);
         push(gachibass, 15);
         push(respect, 10);
         push(anek, 15);
         push(noMoreAdmin, 5);
+        push(foxie, 15);
     }
 
     static function curseChannel(channelId:String, timer:Null<Timer> = null):Void {
@@ -372,5 +373,31 @@ class RandomEvent {
 
     }
 
+    static function foxie(m:Message, w:Array<String>) {
+        var reqv = new Http('https://some-random-api.ml/animal/fox');
 
+        reqv.onData = (d) -> {
+            var pic:RandomPicApi = Json.parse(d);
+
+            var emb:Embed = {};
+            emb.image = {
+                url: pic.image
+            }
+            emb.footer = {
+                text: "лисичка"
+            }
+
+            Rgd.bot.sendMessage(m.channel_id.id, {embed: emb});
+        }
+        reqv.request();
+    }
+
+    
+}
+
+
+
+typedef RandomPicApi = {
+    var image:String;
+    var fact:String;
 }

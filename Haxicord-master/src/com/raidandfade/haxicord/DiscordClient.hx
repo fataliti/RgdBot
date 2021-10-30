@@ -1,5 +1,6 @@
 package com.raidandfade.haxicord;
 
+import com.fataliti.types.InteractionData;
 import com.raidandfade.haxicord.websocket.WebSocketConnection;
 import com.raidandfade.haxicord.endpoints.Endpoints;
 
@@ -426,6 +427,10 @@ class DiscordClient {
             case "WEBHOOKS_UPDATE": //eventually...
 
             case "PRESENCES_REPLACE", "CHANNEL_PINS_ACK": // User only.
+
+            case "INTERACTION_CREATE":
+                onInteraction(d);
+
             default:
                 trace("Unhandled event " + m.t);
         }
@@ -1039,6 +1044,9 @@ class DiscordClient {
         @param d - The event data.
      */
     public dynamic function onRawEvent(e: String, d: Dynamic) {}
+    
+
+    public dynamic function onInteraction(d:InteractionData) {}
 
 }
 

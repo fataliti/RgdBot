@@ -10,10 +10,35 @@ class ImgBb {
     static var key = InitData.imgDbKey;
 
 
+    public static function uploadImage(filebyte:Dynamic, cb:String->Void) {
+        var reqv = new Http("https://api.imgbb.com/1/upload");
+        reqv.setParameter('key', key);
+        reqv.setParameter('name', "lmao");
+
+        if (Std.isOfType(filebyte, Bytes)) {
+            var encod = Base64.encode(filebyte);
+            reqv.setParameter('image', encod);
+        } else {
+            var encod = filebyte;
+            reqv.setParameter('image', encod);
+        }
+
+        reqv.onStatus = s -> {
+            trace(s);
+        }
+
+        reqv.onData = d -> {
+            var responce:ImgBbResponce = Json.parse(d);
+            var link = responce.data.display_url;
+            cb(link);
+        }
+        reqv.request(true);
+    }
+
+
     public static function postImage(filebyte:Dynamic, chanId:String) {
         var reqv = new Http("https://api.imgbb.com/1/upload");
         reqv.setParameter('key', key);
-        reqv.setParameter('expiration', '15552000');
 
         if (Std.isOfType(filebyte, Bytes)) {
             var encod = Base64.encode(filebyte);

@@ -45,7 +45,7 @@ class User {
                 disTimers.set(key, t);
             }
         }
-
+        
         Rgd.db.request('
             CREATE TABLE IF NOT EXISTS "users" (
                 "userId" TEXT PRIMARY KEY,
@@ -59,6 +59,14 @@ class User {
                 "about" TEXT DEFAULT "",
                 "here" INTEGER,
                 "birth" "TEXT"
+            )'
+        );
+
+        Rgd.db.request('
+            CREATE TABLE IF NOT EXISTS "usersNick" (
+                "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+                "userId" TEXT,
+                "nick" TEXT
             )'
         );
 
@@ -719,6 +727,52 @@ class User {
             }
         });
     }
+
+
+    @command(['names', 'nicks', "имена"], 'получить историю ников юзера на сервере', '>пинг или id')
+    public static function nicks(m:Message, w:Array<String>) {
+
+        var userId:Null<String>;
+
+        if (m.mentions[0] != null) {
+            userId = m.mentions[0].id.id;
+        } else {
+            userId = w.shift();
+        }
+
+        if (userId == null) {
+            m.answer('Нет пинга пользователя');
+            return;
+        }
+
+        var nicks = Rgd.db.request('SELECT nick FROM usersNick WHERE userId = "$userId" ORDER BY id DESC').results();
+        if (nicks.length == 0) {
+            m.answer('История ников этого пользователя пуста');
+            return;
+        }
+
+        var emb:Embed = {};
+
+        if (m.mentions[0] != null) {
+            emb.author = {
+                icon_url:  m.mentions[0].avatarUrl,
+                name: 'История никнеймов ${m.mentions[0].username}',
+            }
+        } else {
+            emb.author = {
+                name: 'История никнеймов ${userId}',
+            }
+        }
+        
+        emb.description = 'История ников из ${nicks.length} элементов \n\n';
+        var i = 1;
+        for (nick in nicks) {
+            emb.description += '${i++}: ${nick.nick}\n';
+        }
+
+        m.reply({embed: emb});
+    }
+
 
     @down
     public static function down() {

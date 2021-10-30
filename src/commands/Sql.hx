@@ -1,8 +1,14 @@
 package commands;
 
+import com.fataliti.types.SlashCommand.SlashCommandArgumentType;
+import Utils.Utills;
 import events.OnReady;
 import events.OnClose;
 import com.raidandfade.haxicord.types.Message;
+
+
+import com.fataliti.types.InteractionData;
+import com.fataliti.types.SlashResponse;
 
 class Sql {
     
@@ -22,11 +28,24 @@ class Sql {
 
     @command(['kill'], 'вырубить бота')
     public static function kill(m:Message, w:Array<String>) {
-        trace("killing");
         if (m.author.id.id != '371690693233737740') return;
-        OnClose.onClose(0);
+        command_kill();
     }
 
+
+    @slash("kill", "Команда выключения бота", [])
+    public static function slashKill(d:InteractionData) {
+        if (Utills.isBossUser(d.member.user.id)) {  
+            var respsonse:SlashResponse = {
+                type: InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
+                data: {
+                    content: "Рестарт бота",
+                }
+            }
+            Rgd.bot.endpoints.commandResponse(respsonse, d.id, d.token);
+            command_kill();
+        }
+    }
 
     @command(['esus'], 'исусья команда')
     public static function jesus(m:Message, w:Array<String>) {
@@ -35,8 +54,13 @@ class Sql {
         RandomEvent.blessChannel(m.channel_id.id);
         m.reply({embed: {image: {url: "https://cdn.discordapp.com/attachments/697115584986349608/747495897465618442/unknown.png"}, title: "Есус благославляет этот канал"}});
 		m.delete();
-        
     }
 
+    
+
+    static function command_kill() {
+        trace("killing");
+        OnClose.onClose(0);
+    }
 
 }

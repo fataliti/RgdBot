@@ -1,5 +1,7 @@
 package events;
 
+import com.fataliti.types.SlashCommand;
+import com.fataliti.types.SlashCommand.SlashCommandArgumentType;
 import commands.User;
 import commands.Help;
 import haxe.Timer;
@@ -7,8 +9,12 @@ import events.OnVoiceStateUpdate.VoiceUpdateStruck;
 import sys.db.Sqlite;
 import haxe.rtti.Meta;
 
+import slashcommands.Slash;
+
 class OnReady {
     public static function onReady() {
+
+
         Rgd.db = Sqlite.open("rgd.db");
 
         CompileTime.importPackage("commands");
@@ -35,6 +41,12 @@ class OnReady {
             } 
         }
 
+        CompileTime.importPackage("slashcommands");
+        CompileTime.importPackage("slashcommands.commands");
+        var slashClass:List<Class<Slash>> = CompileTime.getAllClasses("slashcommands.commands");
+        for (_class_type in slashClass) {
+            var d = Type.createInstance(_class_type, []);
+        }
 
 
         Rgd.bot.getGuild(Rgd.rgdId, guild -> {
@@ -92,6 +104,12 @@ class OnReady {
                 birthdayTimer.stop();
             }
         }
+
+        // Rgd.bot.endpoints.registerCommand({
+        //     name: "aboba",
+        //     type: 1,
+        //     description: "pososi"
+        // }, Rgd.appId, Rgd.rgdId);
 
         trace("RGD online");
     }

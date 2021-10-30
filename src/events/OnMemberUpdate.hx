@@ -22,6 +22,21 @@ class OnMemberUpdate {
                     });
                 }
             }
+        } else {
+            var isRenamed = false;
+
+            var getLastRenames = Rgd.db.request('SELECT id, userId, nick FROM usersNick WHERE userId = "${m.user.id.id}" ORDER BY id DESC LIMIT 1').results();
+            if (getLastRenames.length > 0) {
+                if (getLastRenames.first().nick != m.displayName) {
+                    isRenamed = true;
+                }
+            } else {
+                isRenamed = true;
+            }
+
+            if (isRenamed) {
+                Rgd.db.request('INSERT INTO usersNick(userId, nick) VALUES("${m.user.id.id}", "${m.displayName}")');
+            }
         }
         
 
