@@ -16,6 +16,7 @@ class RgdWikiTcpServer {
             '/user' => getUser,
             '/rep' => getRep,
             '/game' => postGame,
+            '/coinchange' => coinChange,
         ];
 
         server = new TcpServer();    
@@ -66,5 +67,15 @@ class RgdWikiTcpServer {
             Control.gocPost([body.data]);
         }
     }
+
+    public function coinChange(data:Dynamic) {
+        var user = data.userId;
+        var amount = data.amount;
+
+        if (user != null && amount != null) {
+            Rgd.db.request('UPDATE users SET coins = coins + $amount WHERE userId = "${user}"');
+        }
+    }
+
 
 }
